@@ -1,6 +1,6 @@
-
 import streamlit as st
 import pandas as pd
+from pathlib import Path
 
 st.set_page_config(
     page_title="FreshTrack AI",
@@ -16,8 +16,15 @@ st.info(
     "simulated inventory and expiry information."
 )
 
-# Load the exported dataset
-df = pd.read_csv("/content/FreshTrack_AI_Expiry_Risk.csv")
+# Load the dataset from the same folder as app.py
+csv_path = Path(__file__).parent / "FreshTrack_AI_Expiry_Risk (1).csv"
+
+try:
+    df = pd.read_csv(csv_path)
+except FileNotFoundError:
+    st.error(f"Dataset not found: {csv_path.name}")
+    st.info("Check that the CSV file is uploaded beside app.py in GitHub.")
+    st.stop()
 
 # Summary metrics
 col1, col2, col3 = st.columns(3)
@@ -54,12 +61,13 @@ st.bar_chart(risk_counts)
 st.subheader("Search Inventory")
 
 search = st.text_input("Enter a product ID")
-
 filtered = df.copy()
 
 if search:
     filtered = filtered[
-        filtered["item_id"].str.contains(search, case=False, na=False)
+        filtered["item_id"].astype(str).str.contains(
+            search, case=False, na=False
+        )
     ]
 
 # Risk filter
