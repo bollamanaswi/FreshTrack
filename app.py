@@ -17,7 +17,7 @@ st.info(
 )
 
 # Load the exported dataset
-df = pd.read_csv("/content/FreshTrack_AI_Expiry_Risk(1).csv")
+df = pd.read_csv("/content/FreshTrack_AI_Expiry_Risk.csv")
 
 # Summary metrics
 col1, col2, col3 = st.columns(3)
