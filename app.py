@@ -1,90 +1,55 @@
-import streamlit as st
-import pandas as pd
-from pathlib import Path
-
-st.set_page_config(
-    page_title="FreshTrack AI",
-    page_icon="🥬",
-    layout="wide"
-)
-
-st.title("🥬 FreshTrack AI")
-st.subheader("Expiry Risk Monitoring and Food Waste Reduction")
-
-st.info(
-    "This prototype uses historical sales data and "
-    "simulated inventory and expiry information."
-)
-
-# Load the dataset from the same folder as app.py
-csv_path = Path(__file__).parent / "FreshTrack_AI_Expiry_Risk (1).csv"
+# Machine Learning Prediction
+st.divider()
+st.header("🤖 ML-Based Expiry Risk Prediction")
 
 try:
-    df = pd.read_csv(csv_path)
-except FileNotFoundError:
-    st.error(f"Dataset not found: {csv_path.name}")
-    st.info("Check that the CSV file is uploaded beside app.py in GitHub.")
-    st.stop()
-
-# Summary metrics
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.metric("Total Records", f"{len(df):,}")
-
-with col2:
-    st.metric(
-        "High-Risk Records",
-        f"{(df['expiry_risk'] == 'High').sum():,}"
+    model = joblib.load(
+        Path(__file__).parent / "freshtrack_expiry_model.pkl"
     )
 
-with col3:
-    st.metric(
-        "Estimated Unsold Units",
-        f"{df['expected_unsold_stock'].sum():,.0f}"
-    )
+    st.write("Enter inventory details to predict expiry risk.")
 
-st.divider()
+    col1, col2, col3 = st.columns(3)
 
-# Risk distribution
-st.subheader("Expiry Risk Distribution")
-
-risk_counts = (
-    df["expiry_risk"]
-    .value_counts()
-    .reindex(["Low", "Medium", "High"], fill_value=0)
-)
-
-st.bar_chart(risk_counts)
-
-# Product search
-st.subheader("Search Inventory")
-
-search = st.text_input("Enter a product ID")
-filtered = df.copy()
-
-if search:
-    filtered = filtered[
-        filtered["item_id"].astype(str).str.contains(
-            search, case=False, na=False
+    with col1:
+        avg_daily_sales = st.number_input(
+            "Average daily sales",
+            min_value=0.0,
+            value=5.0
         )
-    ]
 
-# Risk filter
-risk_filter = st.selectbox(
-    "Filter by expiry risk",
-    ["All", "High", "Medium", "Low"]
-)
+    with col2:
+        stock_quantity = st.number_input(
+            "Current stock quantity",
+            min_value=0,
+            value=50
+        )
 
-if risk_filter != "All":
-    filtered = filtered[filtered["expiry_risk"] == risk_filter]
+    with col3:
+        days_to_expiry = st.number_input(
+            "Days until expiry",
+            min_value=0,
+            value=10
+        )
 
-st.dataframe(filtered, use_container_width=True)
+    if st.button("Predict Expiry Risk"):
+        input_data = pd.DataFrame([{
+            "avg_daily_sales": avg_daily_sales,
+            "stock_quantity": stock_quantity,
+            "days_to_expiry": days_to_expiry
+        }])
 
-# Download filtered results
-st.download_button(
-    "Download displayed records",
-    data=filtered.to_csv(index=False),
-    file_name="FreshTrack_filtered_inventory.csv",
-    mime="text/csv"
-)
+        prediction = model.predict(input_data)[0]
+
+        st.subheader(f"Predicted Expiry Risk: {prediction}")
+
+        st.caption(
+            "Prototype prediction based on simulated training labels; "
+            "not validated for real-world inventory decisions."
+        )
+
+except FileNotFoundError:
+    st.warning(
+        "Upload freshtrack_expiry_model.pkl to the GitHub repository "
+        "to enable ML predictions."
+    )
